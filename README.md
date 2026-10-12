@@ -100,4 +100,4 @@ All commands and options: [docs/cli.md](docs/cli.md).
 
 ## License
 
-MIT — see `pyproject.toml`.
+MIT — see `LICENSE`.

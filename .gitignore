@@ -8,6 +8,7 @@
 
 # --- Tracked project files ---
 !/.gitignore
+!/LICENSE
 !/README.md
 !/pyproject.toml
 !/mkdocs.yml
