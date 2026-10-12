@@ -17,19 +17,17 @@ What happens:
 2. The transcriptions are indexed against the Vulgate JSON.
 3. The page index is written by default to `pipeline_output/index.yaml`, as well as is printed to the console.
 
-The console output ends with something like:
-```
-Wrote htr/full_pipeline_output/index.json
-Wrote index.yaml
-global: 12 lectiones
+The console output will run:
 
-Aggregated index (global, min_reference_words=1, missing_verse_tolerance=0, excluded_books=[])
-001
-  John 1:1–14
-  Psalms 22:1–9 (continues)
-002
-  Psalms 22:9–10 (continued)
-  Genesis 1:1–5
+```bash
+Wrote pipeline_output/index.yaml
+global: 4 lectiones
+
+Aggregated index (global, min_reference_words=30, missing_verse_tolerance=2, excluded_books=[])
+page1__page_0001
+  Acts of Apostles 8:14–17
+  John 10:1–10
+[2026-10-12T16:40:25.991+02:00] Indexing pipeline finished in 00:00:02.960
 ```
 
 `(continues)` means the reading spills over onto the next page;
@@ -61,9 +59,9 @@ scripture-indexer dataset/metz_ms10 \
     --min-reference-words 10 --missing-verse-tolerance 3
 ```
 
-⚠️ A low minimum reference words is more likely to return liturgical readings, while a higher reading will filter out shorter liturgical readings but might miss short lectiones.
+> ⚠️ A low minimum reference words is more likely to return liturgical readings, while a higher reading will filter out shorter liturgical readings but might miss short lectiones.
 
-**Exclude a book from the display index** (e.g. Psalms, when they dominate):
+**Exclude a book from the display index** (e.g. Psalms, if you want to include psalms from the filter):
 
 ```bash
 scripture-indexer dataset/metz_ms10 \
@@ -72,8 +70,8 @@ scripture-indexer dataset/metz_ms10 \
 
 ## Index existing transcriptions
 
-If the text is already transcribed (for example if you want to use another engine than Kraken), run the indexing pipeline directly. Pass the transcription files in manuscript
-reading order:
+If the text is already transcribed (for example if you want to use another engine than Kraken), you can run the indexing pipeline directly on your scans. Pass the transcription files in manuscript
+reading order (this is important as it conditions the optimization algorithm):
 
 ```bash
 python -m scripture_indexer.run_pipeline \
@@ -96,20 +94,3 @@ htr/full_pipeline_output/
 ```
 
 If you have poor results, you should check out `transcription.txt` and `segmentation_overlay.jpg`, as poor HTR quality is probably the culprit.
-
-## The lookup file
-
-The first indexing run builds `bible_lookup.json` next to your working
-directory. It maps internal verse IDs (position in the biblical text) to
-biblical references, and later runs reuse it instead of rebuilding it.
-
-Runs never overwrite it silently: if it no longer matches the current
-biblical text or n-gram size, the pipeline refuses to run rather than
-corrupt the stable artifact. Rebuild it deliberately with:
-
-```bash
-scripture-indexer --build-lookup --ngram-size 4
-```
-
-Use `--bible my_bible.json` in the same command to build the lookup from a
-different biblical text.

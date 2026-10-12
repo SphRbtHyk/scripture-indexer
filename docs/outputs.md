@@ -8,8 +8,6 @@ post-process them, or feed them into other tools.
 |---|---|---|
 | `index.yaml` | `scripture-indexer` | Aggregated page index |
 | `index.json` | `scripture-indexer`, `run_pipeline` | Detailed pipeline result |
-| `index.md` | `run_pipeline` | Markdown page index |
-| `index.txt` | `index.py` | Plain-text page index |
 | `index.log` | all commands | Log file |
 | `bible_lookup.json` | first run of any indexing command | Verse reference lookup |
 | `recognition.alto.xml`, `transcription.txt`, ... | HTR stage | Per-page Kraken artifacts |
@@ -27,15 +25,7 @@ excluded_books: []
 pages:
   - page: 001
     readings:
-      - reference: Ioannes 1:1–14
-        continues_from_previous_page: false
-        continues_on_next_page: false
-  - page: 002
-    readings:
-      - reference: Psalmus 22:1–9
-        continues_from_previous_page: false
-        continues_on_next_page: true
-      - reference: Genesis 1:1–5
+      - reference: John 1:1–14
         continues_from_previous_page: false
         continues_on_next_page: false
 ```
@@ -50,10 +40,7 @@ pages:
 
 Written by `scripture-indexer` (into the HTR output directory) and by
 `run_pipeline` (to `--output`). This is the file to read if you want to
-know **why** a reference was detected, or to re-index with different
-settings using `python -m scripture_indexer.index`.
-
-Top-level structure:
+know **why** a reference was detected and better understand the reasons for bugs.
 
 ```jsonc
 {
@@ -82,7 +69,7 @@ Each optimizer result contains the reconstructed readings:
   "lectiones": [
     {
       "lectio_id": 1,
-      "book": "Ioannes",
+      "book": "John",
       "chapter_start": "1", "verse_start": "1",
       "chapter_end": "1",  "verse_end": "14",
       "source_start": "001", "line_start": 1,
@@ -95,12 +82,12 @@ Each optimizer result contains the reconstructed readings:
           "window_id": 0,
           "token_start": 0, "token_end": 20,
           "verse_id": 23803,
-          "reference": "Ioannes-1-1",
+          "reference": "John-1-1",
           "jaccard": 0.52,
           "transition": "start",        // "start" or "continue"
           "coverage_weight": 1.0,
           "contribution": 0.27,
-          "book": "Ioannes", "chapter": "1", "verse": "1",
+          "book": "John", "chapter": "1", "verse": "1",
           "source_spans": [
             { "source_id": "001", "line_start": 1, "line_end": 4 }
           ]
@@ -112,8 +99,7 @@ Each optimizer result contains the reconstructed readings:
 }
 ```
 
-Per-reading fields worth knowing:
-
+Important fields for debugging:
 - `steps[].jaccard` — similarity between the window text and the verse.
 - `steps[].transition` — `start` begins a new reading, `continue` extends
   the previous one.
@@ -123,60 +109,6 @@ Per-reading fields worth knowing:
   the spans of a reading's steps locates it exactly in the manuscript.
 - `path_score` and `mean_jaccard` — overall quality indicators for the
   reading.
-
-## `index.md` — Markdown page index
-
-Written by `run_pipeline` (to `--index-output`, default `<output>.md`).
-Same content as `index.yaml`, rendered for reading:
-
-```markdown
-# Biblical index
-
-- Optimizer: `global`
-- Minimum reference words: 1
-- Missing verse tolerance: 0
-
-## 001
-
-- Ioannes 1:1–14
-
-## 002
-
-- Psalmus 22:1–9 _(continues)_
-- Genesis 1:1–5
-```
-
-## `index.txt` — plain-text page index
-
-Written by `python -m scripture_indexer.index` (to `--output`). This is
-also what the console prints at the end of every indexing run:
-
-```
-001
-  Ioannes 1:1–14
-002
-  Psalmus 22:1–9 (continues)
-  Genesis 1:1–5
-```
-
-An optional JSON copy with the full per-reading metadata (`page_verse_count`,
-word counts, missing-verse counts, continuation flags) can be written with
-`--json-output`.
-
-## `bible_lookup.json` — verse lookup
-
-Written automatically by the first indexing run, and reused afterwards.
-It maps internal verse IDs (position in the biblical text) to references:
-
-```json
-{
-  "0": { "book": "Genesis", "chapter": "1", "verse": "1" },
-  "1": { "book": "Genesis", "chapter": "1", "verse": "2" }
-}
-```
-
-Rebuild it deliberately with `--build-lookup`; runs never overwrite it
-silently. See [Quickstart](quickstart.md#the-lookup-file).
 
 ## HTR artifacts
 
@@ -193,5 +125,5 @@ htr/full_pipeline_output/
     └── results.jsonl (htr.py only)  # line-level JSON records
 ```
 
-The transcription text is the input consumed by the indexing pipeline; the
-other files are there for inspecting and debugging the recognition.
+The transcription text is the input consumed by the indexing pipeline.
+Poor results can often be explained by the quality of the HTR output. I would suggest checking first the quality of the HTR as a culprit for poor results.
