@@ -12,17 +12,9 @@ You point it at a set of page images (or a PDF), and it:
 1. transcribes the pages with the [Kraken](https://kraken.re) handwriting
    recognition engine,
 2. compares the transcription against a biblical text of your choice
-   (the Sixto-Clementine Vulgate text is included within this library),
+   (the Sixto-Clementine Vulgate text is used as default),
 3. indentifies the biblical readings,
-4. writes a page-by-page index of biblical references, ready to read.
-
-The output will then look like this:
-
-```
-0029
-  Romans 15:5–13 (continued)
-  Matthew 11:2–10
-```
+4. writes a page-by-page index of biblical references, ready to read as a YAML file.
 
 ## General idea
 
@@ -74,7 +66,23 @@ To make sure everything is working on your system, try out the minimal example b
 scripture-indexer example/page1.pdf
 ```
 
-This should return in your console and in the file `pipeline_output/index.yaml` the following
+This should return in your console and in the file `pipeline_output/index.yaml` the following index:
+
+```yaml
+optimizer: global
+min_reference_words: 30
+missing_verse_tolerance: 2
+excluded_books: []
+pages:
+- page: page1__page_0001
+  readings:
+  - reference: Acts of Apostles 8:14–17
+    continues_from_previous_page: false
+    continues_on_next_page: false
+  - reference: John 10:1–10
+    continues_from_previous_page: false
+    continues_on_next_page: false
+```
 
 More information: [docs/quickstart.md](docs/quickstart.md).
 All commands and options: [docs/cli.md](docs/cli.md).
