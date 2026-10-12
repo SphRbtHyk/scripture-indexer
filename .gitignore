@@ -1,0 +1,36 @@
+# Whitelist-style ignore: everything at the repository root is ignored by
+# default, and only the approved entries are re-included below. This keeps
+# local-only material (datasets, HTR models, paper drafts, experiment
+# outputs, virtual environments, build artifacts) out of the public repo.
+
+# Ignore every top-level entry by default.
+/*
+
+# --- Tracked project files ---
+!/.gitignore
+!/README.md
+!/pyproject.toml
+!/mkdocs.yml
+!/.readthedocs.yaml
+
+# --- Tracked project directories ---
+!/src/
+!/docs/
+!/example/
+!/public/
+!/tests/
+
+# --- Python and tooling artifacts (also inside tracked directories) ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.vscode/
+
+# --- Run artifacts produced at the repository root ---
+/site/
+/bible_lookup.json
+/index.log
+/index.json
+/index.md
+/index.yaml

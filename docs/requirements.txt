@@ -1,0 +1,4 @@
+# Documentation build requirements for Read the Docs.
+# Keep in sync with the `docs` extra in pyproject.toml.
+mkdocs>=1.6
+mkdocs-material
