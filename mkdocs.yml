@@ -1,5 +1,6 @@
 site_name: Scripture Indexer
 site_description: Automatic indexing of Latin manuscripts containing biblical quotes.
+site_url: https://sphrbthyk.github.io/scripture-indexer/
 repo_url: https://github.com/SphRbtHyk/scripture-indexer
 
 theme:

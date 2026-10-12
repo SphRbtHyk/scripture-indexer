@@ -12,6 +12,7 @@
 !/pyproject.toml
 !/mkdocs.yml
 !/.readthedocs.yaml
+!/.github/
 
 # --- Tracked project directories ---
 !/src/
