@@ -87,6 +87,14 @@ pages:
 More information: [docs/quickstart.md](docs/quickstart.md).
 All commands and options: [docs/cli.md](docs/cli.md).
 
+## Demo Web application
+
+A demonstration Web application, still under development, is available in the folder `app`:
+
+```bash
+python -m streamlit run app.py 
+```
+
 ## Documentation
 
 | Document | Contents |

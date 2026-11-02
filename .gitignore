@@ -21,6 +21,12 @@
 !/example/
 !/public/
 !/tests/
+!/tools/
+!/app/
+
+# --- Streamlit app run artifacts ---
+/app/uploads/
+/app/cache/
 
 # --- Python and tooling artifacts (also inside tracked directories) ---
 __pycache__/
