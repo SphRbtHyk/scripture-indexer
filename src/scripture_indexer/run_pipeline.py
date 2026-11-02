@@ -13,6 +13,12 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
+from scripture_indexer.auto_hyperparam import (
+    CALIBRATED_PARAMETERS,
+    calibrate_hyperparams,
+    format_calibration_report,
+    save_calibration_result,
+)
 from scripture_indexer.index import (
     HumanReadableIndex,
     IndexBuilder,
@@ -583,6 +589,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-verse-jump", type=int, default=3)
     parser.add_argument("--baseline-threshold", type=float, default=None)
     parser.add_argument(
+        "--auto-hyperparam",
+        action="store_true",
+        help=(
+            "Estimate ngram_size and noise_level from the "
+            "transcriptions themselves (unsupervised). These two "
+            "options cannot be set explicitly in that mode."
+        ),
+    )
+    parser.add_argument(
+        "--auto-hyperparam-diagnostics",
+        type=Path,
+        default=None,
+        help="Write the auto-hyperparam calibration report as JSON.",
+    )
+    parser.add_argument(
+        "--auto-hyperparam-cache",
+        type=Path,
+        default=None,
+        help="Cache the Bible-side calibration constants as JSON.",
+    )
+    parser.add_argument(
         "--index-optimizer",
         choices=("global", "naive"),
         default=None,
@@ -620,6 +647,25 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+_CALIBRATED_OPTIONS = {
+    "ngram_size": "--ngram-size",
+    "noise_level": "--noise-level",
+}
+
+
+def reject_explicit_calibrated_options(
+    parser: argparse.ArgumentParser,
+) -> None:
+    """Refuse mixing --auto-hyperparam with explicit calibrated options."""
+    for option in _CALIBRATED_OPTIONS.values():
+        if option in sys.argv or any(
+            argument.startswith(option + "=") for argument in sys.argv
+        ):
+            parser.error(
+                f"{option} cannot be combined with --auto-hyperparam"
+            )
+
+
 def main() -> None:
     """Parse arguments and run the complete pipeline."""
     parser = build_parser()
@@ -634,6 +680,22 @@ def main() -> None:
             f"Cannot display {args.index_optimizer!r} when only "
             f"{args.optimizer!r} is run"
         )
+
+    if args.auto_hyperparam:
+        reject_explicit_calibrated_options(parser)
+        result = calibrate_hyperparams(
+            transcription_files=args.transcriptions,
+            bible=args.bible,
+            constants_cache=args.auto_hyperparam_cache,
+        )
+        print(format_calibration_report(result), file=sys.stderr)
+        if args.auto_hyperparam_diagnostics is not None:
+            save_calibration_result(
+                result,
+                args.auto_hyperparam_diagnostics,
+            )
+        for name in CALIBRATED_PARAMETERS:
+            setattr(args, name, result.parameters[name])
 
     logging.basicConfig(
         level=logging.INFO if args.verbose else logging.WARNING,

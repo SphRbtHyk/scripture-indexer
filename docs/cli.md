@@ -44,6 +44,8 @@ scripture-indexer example/page1.pdf
 | `--max-verse-jump N` | 3 | Largest forward verse jump allowed |
 | `--baseline-threshold F` | — | Accepted (and ignored) by the naive optimizer, kept for compatibility |
 
+The `ngram-size` and `noise-level` parameters can be automatically inferred from the dataset by using the flag `--autho-hyperparam`. 
+
 ### Index shaping options
 
 | Option | Default | Description |

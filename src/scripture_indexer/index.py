@@ -261,12 +261,15 @@ class IndexBuilder:
         return frozenset(pages)
 
     @staticmethod
-    def _source_page_number(source_id: str) -> int:
+    def _source_page_number(source_id: str) -> int | None:
         """Extract an image page number from a source identifier.
 
         Identifiers ending in a folio label, such as ``54 - f. 024v``, use
         the image page before the spaced dash. Other identifiers use their
         final integer, for example ``ms103__page_0083`` becomes ``83``.
+        Identifiers without any digit, such as ``segmentation_overlay``,
+        return ``None``: they simply do not take part in cross-page
+        adjacency checks.
         """
         stem = Path(source_id).stem
         page_and_folio = re.split(r"\s+[-–—]\s+", stem, maxsplit=1)
@@ -277,17 +280,17 @@ class IndexBuilder:
 
         numbers = re.findall(r"\d+", stem)
         if not numbers:
-            raise ValueError(
-                f"Cannot extract a page number from {source_id!r}"
-            )
+            return None
         return int(numbers[-1])
 
     @classmethod
     def _lectio_page_numbers(cls, lectio: _IndexLectio) -> frozenset[int]:
         """Return numeric source pages touched by a lectio."""
         return frozenset(
-            cls._source_page_number(source_id)
+            page_number
             for source_id in cls._lectio_pages(lectio)
+            if (page_number := cls._source_page_number(source_id))
+            is not None
         )
 
     @staticmethod

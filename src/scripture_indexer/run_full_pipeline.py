@@ -19,6 +19,12 @@ from typing import Any
 
 import yaml
 
+from scripture_indexer.auto_hyperparam import (
+    AutoHyperparamSettings,
+    calibrate_hyperparams,
+    format_calibration_report,
+    save_calibration_result,
+)
 from scripture_indexer.htr import (
     find_inputs,
     iter_page_images,
@@ -32,6 +38,7 @@ from scripture_indexer.run_pipeline import (
     build_aggregated_index,
     load_biblical_text,
     print_pipeline_report,
+    reject_explicit_calibrated_options,
     resolve_bible_file,
     run_pipeline,
     select_index_optimizer,
@@ -102,6 +109,14 @@ def transcribe_pages(
     transcription_files: list[Path] = []
     for image in images:
         page_dir = output_dir / image.stem
+        # transcription.txt is written last by save_inspection_artifacts, so
+        # an existing non-empty one means the page is fully transcribed:
+        # reuse it instead of re-running Kraken.
+        transcription = page_dir / "transcription.txt"
+        if transcription.is_file() and transcription.stat().st_size > 0:
+            transcription_files.append(transcription)
+            print(f"{image.name}: transcription existante réutilisée", file=sys.stderr)
+            continue
         page_dir.mkdir(parents=True, exist_ok=True)
         alto = page_dir / "recognition.alto.xml"
         run_kraken(
@@ -199,6 +214,9 @@ def run_full_pipeline(
     min_reference_words: int = 1,
     missing_verse_tolerance: int = 3,
     excluded_books: Sequence[str] = (),
+    auto_hyperparam: bool = False,
+    auto_hyperparam_diagnostics: str | Path | None = None,
+    auto_hyperparam_cache: str | Path | None = None,
 ) -> dict[str, Any]:
     """Transcribe HTR pages and write the aggregated page index as YAML.
 
@@ -235,6 +253,23 @@ def run_full_pipeline(
             batch_size=batch_size,
             threads=threads,
         )
+
+    if auto_hyperparam:
+        with timed_stage("Auto hyperparameter calibration"):
+            calibration = calibrate_hyperparams(
+                transcription_files=transcription_files,
+                bible=bible_file,
+                settings=AutoHyperparamSettings(window_size=window_size),
+                constants_cache=auto_hyperparam_cache,
+            )
+            print(format_calibration_report(calibration), file=sys.stderr)
+            if auto_hyperparam_diagnostics is not None:
+                save_calibration_result(
+                    calibration,
+                    auto_hyperparam_diagnostics,
+                )
+            ngram_size = calibration.parameters["ngram_size"]
+            noise_level = calibration.parameters["noise_level"]
 
     with timed_stage("Indexing pipeline"):
         output = run_pipeline(
@@ -391,6 +426,28 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-verse-jump", type=int, default=3)
     parser.add_argument("--baseline-threshold", type=float, default=None)
     parser.add_argument(
+        "--auto-hyperparam",
+        action="store_true",
+        help=(
+            "Estimate ngram_size and noise_level from the "
+            "transcriptions themselves (unsupervised), after HTR, at "
+            "the operating --window-size. These two options cannot be "
+            "set explicitly in that mode."
+        ),
+    )
+    parser.add_argument(
+        "--auto-hyperparam-diagnostics",
+        type=Path,
+        default=None,
+        help="Write the auto-hyperparam calibration report as JSON.",
+    )
+    parser.add_argument(
+        "--auto-hyperparam-cache",
+        type=Path,
+        default=None,
+        help="Cache the Bible-side calibration constants as JSON.",
+    )
+    parser.add_argument(
         "--index-optimizer",
         choices=("global", "naive"),
         default="global",
@@ -448,6 +505,8 @@ def main() -> None:
             f"Cannot display {args.index_optimizer!r} when only "
             f"{args.optimizer!r} is run"
         )
+    if args.auto_hyperparam:
+        reject_explicit_calibrated_options(parser)
 
     logging.basicConfig(
         level=logging.INFO if args.verbose else logging.WARNING,
@@ -495,6 +554,9 @@ def main() -> None:
         min_reference_words=args.min_reference_words,
         missing_verse_tolerance=args.missing_verse_tolerance,
         excluded_books=args.excluded_books,
+        auto_hyperparam=args.auto_hyperparam,
+        auto_hyperparam_diagnostics=args.auto_hyperparam_diagnostics,
+        auto_hyperparam_cache=args.auto_hyperparam_cache,
     )
 
 
